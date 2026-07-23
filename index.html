@@ -225,6 +225,24 @@
   .savehint { font-size: 11px; color: var(--muted); margin-top: 2px; visibility: hidden; }
   .savehint.on { visibility: visible; color: var(--green); }
 
+  /* learn panel */
+  .learnbox { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .learnhead {
+    display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 16px;
+    background: none; border: none; text-align: left; font-family: Consolas, monospace;
+    font-size: 13.5px; font-weight: 700; color: var(--accent); min-height: 44px;
+  }
+  .learnhead:hover { background: var(--surface2); }
+  .learnhead .caret { margin-left: auto; }
+  .learnbox.open .learnhead .caret { transform: rotate(90deg); }
+  .learnbody { display: none; padding: 4px 20px 18px; }
+  .learnbox.open .learnbody { display: block; }
+  .learnsec { margin-top: 14px; }
+  .learnsec h4 { font-size: 13.5px; margin-bottom: 6px; color: var(--ink); }
+  .learnsec h4 .snum { color: var(--accent); font-family: Consolas, monospace; margin-right: 6px; }
+  .learnsec p { font-size: 13.5px; color: var(--ink2); margin-bottom: 8px; }
+  .learnsec pre.code { margin-top: 4px; }
+
   .banner {
     background: var(--accent-soft); border-radius: 10px; padding: 14px 18px;
     margin: 16px 0; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
@@ -306,6 +324,14 @@
 <script src="data/week6.js"></script>
 <script src="data/week7.js"></script>
 <script src="data/week8.js"></script>
+<script src="data/learn1.js"></script>
+<script src="data/learn2.js"></script>
+<script src="data/learn3.js"></script>
+<script src="data/learn4.js"></script>
+<script src="data/learn5.js"></script>
+<script src="data/learn6.js"></script>
+<script src="data/learn7.js"></script>
+<script src="data/learn8.js"></script>
 <script>
 (function () {
   "use strict";
@@ -473,10 +499,29 @@
     var html = '<h2 class="vtitle" style="margin-top:0">week0' + w.week + " — " + esc(w.title) + ' <span class="cmt">// ' + st.solved + "/" + st.total + " solved</span></h2>";
     html += '<div class="vgoal">' + esc(w.goal) + "</div>";
     html += '<div class="patterns">' + w.patterns.map(function (p) { return '<span class="chip">' + esc(p) + "</span>"; }).join("") + "</div>";
+    html += learnBox(w.week);
     if (st.solved === st.total && st.total > 0) {
       html += '<div class="banner"><p><b>Week done.</b> Before moving on, re-solve a few from memory — queue 5 random earlier questions for review.</p><button data-action="shuffle5">Queue 5 for review</button></div>';
     }
     html += qlist(w.questions, false);
+    return html;
+  }
+
+  var openLearn = {};
+  function learnBox(weekNum) {
+    var learn = (window.LC_LEARN || {})[weekNum];
+    if (!learn || !learn.sections || !learn.sections.length) return "";
+    var open = openLearn[weekNum] ? " open" : "";
+    var html = '<div class="learnbox' + open + '" data-learn="' + weekNum + '">';
+    html += '<button class="learnhead" data-action="learn-toggle" aria-expanded="' + (openLearn[weekNum] ? "true" : "false") + '">';
+    html += '<span>📖 Learn the patterns</span><span style="font-weight:400;color:var(--muted)">' + learn.sections.length + ' topics — read before solving</span><span class="caret">▶</span></button>';
+    html += '<div class="learnbody">';
+    learn.sections.forEach(function (s, i) {
+      html += '<div class="learnsec"><h4><span class="snum">' + (i + 1) + '.</span>' + esc(s.title) + "</h4>" + paras(s.body);
+      if (s.kotlin) html += '<pre class="code">' + highlightKotlin(s.kotlin) + "</pre>";
+      html += "</div>";
+    });
+    html += "</div></div>";
     return html;
   }
 
@@ -607,6 +652,10 @@
 
     if (act === "toggle" && qid) {
       openRows[qid] = !openRows[qid];
+      render();
+    } else if (act === "learn-toggle") {
+      var lw = t.closest(".learnbox").dataset.learn;
+      openLearn[lw] = !openLearn[lw];
       render();
     } else if (act === "reveal") {
       var panel = t.closest(".qbody").querySelector('.rpanel[data-panel="' + t.dataset.panel + '"]');
