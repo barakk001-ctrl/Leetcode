@@ -1,0 +1,12 @@
+{
+  "name": "kotlin-grind",
+  "version": "1.0.0",
+  "description": "8-week LeetCode interview plan tracker with Kotlin solutions and spaced repetition",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

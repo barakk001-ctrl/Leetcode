@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kotlin Grind — 8-Week LeetCode Plan</title>
+<style>
+  :root {
+    --bg: #f7f8fa;
+    --surface: #ffffff;
+    --surface2: #f2f3f5;
+    --ink: #1b1d23;
+    --ink2: #55585f;
+    --muted: #8a8d94;
+    --border: #e3e5e8;
+    --accent: #6b47d6;        /* kotlin purple, darkened for contrast on white */
+    --accent-soft: #efeaff;
+    --green: #2e7d3e;         /* solved */
+    --green-soft: #e7f3e9;
+    --blue: #2f6fd0;          /* attempted */
+    --blue-soft: #e8f0fb;
+    --orange: #b25d0a;        /* review due */
+    --orange-soft: #fdf0df;
+    --track: #e7e8ec;
+    --code-bg: #f6f4ff;
+    --kw: #0033b3;  --str: #067d17;  --num: #1750eb;  --cmt: #8c8c8c;  --typ: #371f80;  --fn: #00627a;
+    --shadow: 0 1px 3px rgba(27,29,35,.07);
+    --easy: #2e7d3e; --medium: #b25d0a; --hard: #c23a3a;
+  }
+  :root[data-theme="dark"] {
+    --bg: #1e1f22;
+    --surface: #2b2d30;
+    --surface2: #26282b;
+    --ink: #dfe1e5;
+    --ink2: #b4b8bf;
+    --muted: #868a91;
+    --border: #3c3e44;
+    --accent: #a88bfa;
+    --accent-soft: #37304d;
+    --green: #6acc79;
+    --green-soft: #2b3b2e;
+    --blue: #7aa7e8;
+    --blue-soft: #2b3547;
+    --orange: #e8a33d;
+    --orange-soft: #43371f;
+    --track: #3c3e44;
+    --code-bg: #232127;
+    --kw: #cc7832; --str: #6a8759; --num: #6897bb; --cmt: #808080; --typ: #b09df0; --fn: #ffc66d;
+    --shadow: none;
+    --easy: #6acc79; --medium: #e8a33d; --hard: #ef7070;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { height: 100%; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: var(--bg); color: var(--ink);
+    font-size: 15px; line-height: 1.55; height: 100%;
+  }
+  .mono, button, .navitem, .chip, .stat-num, textarea, code, pre {
+    font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+  }
+  a { color: var(--accent); }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+  #app { display: flex; height: 100vh; }
+
+  /* ---------- sidebar : project tree ---------- */
+  #sidebar {
+    width: 248px; flex-shrink: 0; background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; overflow-y: auto;
+  }
+  .brand { padding: 18px 16px 14px; border-bottom: 1px solid var(--border); }
+  .brand .line1 { font-family: Consolas, monospace; font-size: 15px; font-weight: 700; }
+  .brand .line1 .kw { color: var(--kw); }
+  .brand .line1 .typ { color: var(--typ); }
+  .brand .sub { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  nav { padding: 8px; flex: 1; }
+  .navsec { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 12px 8px 4px; font-family: Consolas, monospace; }
+  .navitem {
+    display: flex; align-items: center; gap: 8px; width: 100%;
+    padding: 7px 10px; border: none; background: none; text-align: left;
+    border-radius: 6px; font-size: 13px; color: var(--ink); min-height: 32px;
+  }
+  .navitem:hover { background: var(--surface2); }
+  .navitem.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .navitem .nlabel { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .navitem .ncount { font-size: 11px; color: var(--muted); }
+  .navitem.active .ncount { color: var(--accent); }
+  .navitem .badge {
+    background: var(--orange); color: #fff; border-radius: 8px;
+    font-size: 10.5px; padding: 0 6px; line-height: 16px; font-weight: 700;
+  }
+  .wmeter { width: 34px; height: 4px; background: var(--track); border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+  .wmeter i { display: block; height: 100%; background: var(--accent); border-radius: 4px; }
+  .wmeter.full i { background: var(--green); }
+  .sidefoot { padding: 10px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+  .sidefoot .row { display: flex; gap: 6px; }
+  .ghostbtn {
+    flex: 1; font-size: 11.5px; padding: 6px 8px; border-radius: 6px;
+    border: 1px solid var(--border); background: none; color: var(--ink2); min-height: 30px;
+  }
+  .ghostbtn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ---------- main ---------- */
+  #main { flex: 1; overflow-y: auto; }
+  .view { max-width: 880px; margin: 0 auto; padding: 26px 28px 80px; }
+
+  /* signature header: live kotlin val */
+  .kheader {
+    font-family: "Cascadia Code", Consolas, monospace;
+    font-size: clamp(15px, 2.3vw, 21px); font-weight: 600;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px 20px 16px; box-shadow: var(--shadow);
+  }
+  .kheader .lnum { color: var(--muted); font-size: .75em; margin-right: 14px; user-select: none; }
+  .kheader .kw { color: var(--kw); } .kheader .typ { color: var(--typ); }
+  .kheader .num { color: var(--num); } .kheader .prop { color: var(--fn); }
+  .kheader .pn { color: var(--ink2); }
+  .planmeter { display: flex; gap: 2px; margin-top: 14px; height: 8px; }
+  .planmeter .seg { background: var(--track); border-radius: 4px; overflow: hidden; position: relative; }
+  .planmeter .seg i { position: absolute; inset: 0; width: 0; background: var(--accent); border-radius: 4px; }
+  .planmeter .seg.full i { background: var(--green); }
+  .meterlabels { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--muted); font-family: Consolas, monospace; }
+
+  .stats { display: flex; gap: 12px; margin: 18px 0 6px; flex-wrap: wrap; }
+  .stat {
+    flex: 1; min-width: 130px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px; box-shadow: var(--shadow);
+  }
+  .stat-num { font-size: 26px; font-weight: 700; line-height: 1.15; }
+  .stat-num.due { color: var(--orange); }
+  .stat-num.ok { color: var(--green); }
+  .stat-lbl { font-size: 12px; color: var(--ink2); margin-top: 2px; }
+
+  h2.vtitle { font-family: Consolas, monospace; font-size: 18px; margin: 26px 0 4px; }
+  h2.vtitle .cmt { color: var(--cmt); font-weight: 400; }
+  .vgoal { color: var(--ink2); font-size: 13.5px; margin-bottom: 12px; }
+  .patterns { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .chip {
+    font-size: 11.5px; background: var(--accent-soft); color: var(--accent);
+    padding: 3px 10px; border-radius: 20px; font-weight: 600;
+  }
+
+  /* ---------- question rows : file list with gutter ---------- */
+  .qlist { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+  .qrow { border-bottom: 1px solid var(--border); }
+  .qrow:last-child { border-bottom: none; }
+  .qhead {
+    display: flex; align-items: center; gap: 12px; width: 100%;
+    padding: 11px 16px 11px 12px; background: none; border: none; text-align: left;
+    font-family: inherit; font-size: 14px; color: var(--ink); min-height: 44px;
+  }
+  .qhead:hover { background: var(--surface2); }
+  .gutter {
+    width: 26px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-family: Consolas, monospace; font-size: 15px;
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+  .dot.todo { border: 2px solid var(--muted); }
+  .dot.attempted { border: 2px solid var(--blue); background: linear-gradient(90deg, var(--blue) 50%, transparent 50%); }
+  .dot.solved { background: var(--green); }
+  .dot.mastered { background: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .gutter .due { color: var(--orange); font-weight: 700; font-size: 14px; }
+  .qtitle { flex: 1; font-weight: 600; }
+  .qtitle .qsub { display: block; font-size: 11.5px; color: var(--muted); font-weight: 400; }
+  .diff { font-size: 11px; font-weight: 700; font-family: Consolas, monospace; width: 52px; text-align: right; flex-shrink: 0; }
+  .diff.Easy { color: var(--easy); } .diff.Medium { color: var(--medium); } .diff.Hard { color: var(--hard); }
+  .caret { color: var(--muted); font-size: 11px; transition: transform .15s; }
+  .qrow.open .caret { transform: rotate(90deg); }
+
+  .qbody { display: none; padding: 4px 18px 18px 50px; }
+  .qrow.open .qbody { display: block; }
+  .qsummary { color: var(--ink2); font-size: 13.5px; margin-bottom: 10px; }
+  .qmeta { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; font-size: 12px; }
+  .qmeta a { font-weight: 600; text-decoration: none; }
+  .qmeta a:hover { text-decoration: underline; }
+  .qmeta .pat { color: var(--muted); font-family: Consolas, monospace; }
+
+  .reveals { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  .rbtn {
+    font-size: 12px; padding: 6px 12px; border-radius: 6px; min-height: 32px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--ink2);
+  }
+  .rbtn:hover { border-color: var(--accent); color: var(--accent); }
+  .rbtn.shown { background: var(--accent-soft); border-color: transparent; color: var(--accent); font-weight: 600; }
+  .rpanel { display: none; background: var(--surface2); border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; font-size: 13.5px; }
+  .rpanel.shown { display: block; }
+  .rpanel h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); margin-bottom: 6px; font-family: Consolas, monospace; }
+  .rpanel p { margin-bottom: 8px; } .rpanel p:last-child { margin-bottom: 0; }
+  .rpanel ul { padding-left: 18px; } .rpanel li { margin-bottom: 4px; }
+  pre.code {
+    background: var(--code-bg); border-radius: 8px; padding: 14px 16px;
+    overflow-x: auto; font-size: 12.5px; line-height: 1.6; tab-size: 4;
+  }
+  pre.code .kw { color: var(--kw); font-weight: 600; } pre.code .str { color: var(--str); }
+  pre.code .num { color: var(--num); } pre.code .cmt { color: var(--cmt); font-style: italic; }
+  pre.code .typ { color: var(--typ); }
+  .cxline { font-family: Consolas, monospace; font-size: 12px; color: var(--ink2); margin-top: 8px; }
+
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0 4px; }
+  .abtn {
+    font-size: 12.5px; font-weight: 600; padding: 7px 14px; border-radius: 6px;
+    border: 1px solid transparent; min-height: 34px;
+  }
+  .abtn.attempted { background: var(--blue-soft); color: var(--blue); }
+  .abtn.solved { background: var(--green-soft); color: var(--green); }
+  .abtn.review { background: var(--green-soft); color: var(--green); }
+  .abtn.struggled { background: var(--orange-soft); color: var(--orange); }
+  .abtn.on { border-color: currentColor; }
+  .abtn:hover { filter: brightness(.96); }
+  .abtn.reset { background: none; color: var(--muted); font-weight: 400; }
+  .qstate { font-size: 12px; color: var(--muted); margin-top: 6px; font-family: Consolas, monospace; }
+
+  .notes { margin-top: 12px; }
+  .notes textarea {
+    width: 100%; min-height: 64px; resize: vertical; border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; font-size: 13px; background: var(--surface);
+    color: var(--ink); font-family: "Segoe UI", sans-serif;
+  }
+  .notes textarea:focus { border-color: var(--accent); outline: none; }
+  .notes label { font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); font-family: Consolas, monospace; display: block; margin-bottom: 4px; }
+  .savehint { font-size: 11px; color: var(--muted); margin-top: 2px; visibility: hidden; }
+  .savehint.on { visibility: visible; color: var(--green); }
+
+  .banner {
+    background: var(--accent-soft); border-radius: 10px; padding: 14px 18px;
+    margin: 16px 0; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  }
+  .banner p { flex: 1; font-size: 13.5px; color: var(--ink); min-width: 200px; }
+  .banner button { background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; min-height: 34px; }
+
+  .empty { text-align: center; color: var(--muted); padding: 34px 20px; font-size: 13.5px; }
+  .empty .big { font-size: 26px; display: block; margin-bottom: 8px; }
+
+  /* journal */
+  .jnew textarea {
+    width: 100%; min-height: 84px; border: 1px solid var(--border); border-radius: 10px;
+    padding: 12px 14px; font-size: 14px; background: var(--surface); color: var(--ink);
+    font-family: "Segoe UI", sans-serif; resize: vertical;
+  }
+  .jnew button { margin-top: 8px; background: var(--accent); color: #fff; border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 600; min-height: 34px; }
+  .jentry { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; margin-top: 12px; box-shadow: var(--shadow); }
+  .jentry .jdate { font-size: 11.5px; color: var(--muted); font-family: Consolas, monospace; display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .jentry .jdel { background: none; border: none; color: var(--muted); font-size: 11px; }
+  .jentry .jdel:hover { color: var(--hard); }
+  .jentry .jtext { white-space: pre-wrap; font-size: 14px; }
+
+  /* guide */
+  .guide { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 22px 26px; box-shadow: var(--shadow); }
+  .guide[dir="rtl"] { text-align: right; }
+  .guide h3 { font-size: 16px; margin: 18px 0 8px; color: var(--accent); }
+  .guide h3:first-child { margin-top: 0; }
+  .guide ol, .guide ul { padding-inline-start: 22px; }
+  .guide li { margin-bottom: 5px; }
+  .topiclist { list-style: none; padding: 0 !important; }
+  .topiclist li { display: flex; align-items: center; gap: 10px; padding: 4px 0; }
+  .topiclist input { width: 16px; height: 16px; accent-color: var(--accent); }
+  .topiclist label { cursor: pointer; }
+  .topiclist .done { color: var(--muted); text-decoration: line-through; }
+
+  /* mobile */
+  #menubtn { display: none; }
+  @media (max-width: 760px) {
+    #app { flex-direction: column; height: auto; }
+    #sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5; max-height: none; }
+    nav { display: flex; overflow-x: auto; padding: 6px; }
+    .navsec { display: none; }
+    .navitem { white-space: nowrap; width: auto; }
+    .navitem .ncount, .wmeter { display: none; }
+    .brand, .sidefoot { display: none; }
+    .view { padding: 18px 14px 60px; }
+    .qbody { padding-left: 16px; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="brand">
+      <div class="line1"><span class="kw">package</span> <span>grind</span><span class="typ">.kotlin</span></div>
+      <div class="sub">8-week interview plan · 58 questions</div>
+    </div>
+    <nav id="nav"></nav>
+    <div class="sidefoot">
+      <div class="row">
+        <button class="ghostbtn" data-action="export">Export</button>
+        <button class="ghostbtn" data-action="import">Import</button>
+      </div>
+      <div class="row">
+        <button class="ghostbtn" data-action="theme">Light / Dark</button>
+      </div>
+      <input type="file" id="importfile" accept=".json" hidden>
+    </div>
+  </aside>
+  <main id="main"><div class="view" id="viewroot"></div></main>
+</div>
+
+<script src="data/week1.js"></script>
+<script src="data/week2.js"></script>
+<script src="data/week3.js"></script>
+<script src="data/week4.js"></script>
+<script src="data/week5.js"></script>
+<script src="data/week6.js"></script>
+<script src="data/week7.js"></script>
+<script src="data/week8.js"></script>
+<script>
+(function () {
+  "use strict";
+  var WEEKS = (window.LC_WEEKS || []).slice().sort(function (a, b) { return a.week - b.week; });
+  var ALLQ = [];
+  WEEKS.forEach(function (w) { w.questions.forEach(function (q) { q._week = w.week; ALLQ.push(q); }); });
+  var QBYID = {};
+  ALLQ.forEach(function (q) { QBYID[q.id] = q; });
+
+  var INTERVALS = [2, 7, 21]; // days until next review, per completed-review count
+  var STORE_KEY = "lc-tracker-v1";
+
+  /* ---------- state ---------- */
+  function blankState() { return { q: {}, journal: [], topics: {}, theme: "auto" }; }
+  var S = load();
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (raw) { var s = JSON.parse(raw); s.q = s.q || {}; s.journal = s.journal || []; s.topics = s.topics || {}; return s; }
+    } catch (e) {}
+    return blankState();
+  }
+  function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {} }
+  function qs(id) {
+    if (!S.q[id]) S.q[id] = { status: "todo", solvedAt: null, stage: 0, nextReview: null, notes: "" };
+    return S.q[id];
+  }
+
+  /* ---------- dates ---------- */
+  function today() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function addDays(dateStr, n) {
+    var p = dateStr.split("-");
+    var d = new Date(+p[0], +p[1] - 1, +p[2] + n);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function isDue(st) { return st.status === "solved" && st.nextReview && st.nextReview <= today(); }
+  function isMastered(st) { return st.status === "solved" && st.stage >= INTERVALS.length; }
+
+  /* ---------- derived ---------- */
+  function weekStats(w) {
+    var solved = 0;
+    w.questions.forEach(function (q) { if (qs(q.id).status === "solved") solved++; });
+    return { solved: solved, total: w.questions.length };
+  }
+  function dueList() { return ALLQ.filter(function (q) { return isDue(qs(q.id)); }); }
+  function totalSolved() { return ALLQ.filter(function (q) { return qs(q.id).status === "solved"; }).length; }
+  function currentWeek() {
+    for (var i = 0; i < WEEKS.length; i++) { var st = weekStats(WEEKS[i]); if (st.solved < st.total) return WEEKS[i]; }
+    return WEEKS[WEEKS.length - 1];
+  }
+
+  /* ---------- helpers ---------- */
+  function esc(s) {
+    return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  var KT_KW = "package|import|class|object|interface|fun|val|var|if|else|when|for|while|do|return|in|is|as|null|true|false|this|super|break|continue|throw|try|catch|finally|data|override|private|public|internal|protected|constructor|init|companion|lateinit|by|it|out|vararg|open|abstract|sealed|enum";
+  function highlightKotlin(code) {
+    var out = "", re = new RegExp(
+      "(//[^\\n]*)|(\"(?:[^\"\\\\]|\\\\.)*\")|('(?:[^'\\\\]|\\\\.)')|\\b(" + KT_KW + ")\\b|\\b(\\d[\\d_]*\\.?\\d*[LfF]?)\\b|\\b([A-Z][A-Za-z0-9_]*)\\b", "g");
+    var last = 0, m;
+    while ((m = re.exec(code)) !== null) {
+      out += esc(code.slice(last, m.index));
+      if (m[1]) out += '<span class="cmt">' + esc(m[1]) + "</span>";
+      else if (m[2] || m[3]) out += '<span class="str">' + esc(m[2] || m[3]) + "</span>";
+      else if (m[4]) out += '<span class="kw">' + esc(m[4]) + "</span>";
+      else if (m[5]) out += '<span class="num">' + esc(m[5]) + "</span>";
+      else if (m[6]) out += '<span class="typ">' + esc(m[6]) + "</span>";
+      last = re.lastIndex;
+    }
+    out += esc(code.slice(last));
+    return out;
+  }
+  function paras(text) {
+    return text.split(/\n\n+/).map(function (p) { return "<p>" + esc(p.trim()) + "</p>"; }).join("");
+  }
+
+  /* ---------- nav ---------- */
+  var route = { view: "today" };
+  function renderNav() {
+    var due = dueList().length;
+    var html = "";
+    html += '<div class="navsec">plan</div>';
+    html += navItem("today", "▸ Today", due ? '<span class="badge">' + due + "</span>" : "");
+    WEEKS.forEach(function (w) {
+      var st = weekStats(w);
+      var pct = st.total ? (st.solved / st.total * 100) : 0;
+      var meter = '<span class="wmeter' + (st.solved === st.total ? " full" : "") + '"><i style="width:' + pct + '%"></i></span>';
+      html += navItem("week-" + w.week, "wk0" + w.week + "  " + w.title, '<span class="ncount">' + st.solved + "/" + st.total + "</span>" + meter);
+    });
+    html += '<div class="navsec">extras</div>';
+    html += navItem("journal", "✎ Journal", "");
+    html += navItem("guide", "ℹ Guide", "");
+    document.getElementById("nav").innerHTML = html;
+  }
+  function navItem(id, label, right) {
+    var active = route.view === id ? " active" : "";
+    return '<button class="navitem' + active + '" data-nav="' + id + '"><span class="nlabel">' + esc(label) + "</span>" + right + "</button>";
+  }
+
+  /* ---------- views ---------- */
+  function render() {
+    renderNav();
+    var root = document.getElementById("viewroot");
+    if (route.view === "today") root.innerHTML = viewToday();
+    else if (route.view === "journal") root.innerHTML = viewJournal();
+    else if (route.view === "guide") root.innerHTML = viewGuide();
+    else {
+      var n = +route.view.split("-")[1];
+      var w = WEEKS.filter(function (x) { return x.week === n; })[0];
+      root.innerHTML = w ? viewWeek(w) : viewToday();
+    }
+    document.getElementById("main").scrollTop = 0;
+  }
+
+  function kotlinHeader() {
+    var solved = totalSolved(), due = dueList().length, cw = currentWeek();
+    var h = '<div class="kheader" role="img" aria-label="Progress: week ' + cw.week + ", " + solved + " of " + ALLQ.length + " solved, " + due + ' reviews due">';
+    h += '<span class="lnum">1</span><span class="kw">val</span> plan <span class="pn">=</span> <span class="typ">StudyPlan</span><span class="pn">(</span>';
+    h += '<span class="prop">week</span> <span class="pn">=</span> <span class="num">' + cw.week + "</span><span class='pn'>,</span> ";
+    h += '<span class="prop">solved</span> <span class="pn">=</span> <span class="num">' + solved + "</span> <span class='kw'>of</span> <span class='num'>" + ALLQ.length + "</span><span class='pn'>,</span> ";
+    h += '<span class="prop">reviewsDue</span> <span class="pn">=</span> <span class="num">' + due + "</span><span class='pn'>)</span>";
+    var segs = '<div class="planmeter" aria-hidden="true">';
+    WEEKS.forEach(function (w) {
+      var st = weekStats(w), pct = st.total ? st.solved / st.total * 100 : 0;
+      segs += '<span class="seg' + (st.solved === st.total && st.total ? " full" : "") + '" style="flex:' + st.total + '" title="Week ' + w.week + ": " + st.solved + "/" + st.total + '"><i style="width:' + pct + '%"></i></span>';
+    });
+    segs += "</div>";
+    segs += '<div class="meterlabels"><span>wk01</span><span>wk08</span></div>';
+    return h + segs + "</div>";
+  }
+
+  function viewToday() {
+    var html = kotlinHeader();
+    var due = dueList(), solved = totalSolved(), cw = currentWeek(), cwStats = weekStats(cw);
+    html += '<div class="stats">';
+    html += '<div class="stat"><div class="stat-num ok">' + solved + '<span style="font-size:14px;color:var(--muted)"> / ' + ALLQ.length + '</span></div><div class="stat-lbl">questions solved</div></div>';
+    html += '<div class="stat"><div class="stat-num' + (due.length ? " due" : "") + '">' + due.length + '</div><div class="stat-lbl">reviews due today</div></div>';
+    html += '<div class="stat"><div class="stat-num">' + cw.week + '<span style="font-size:14px;color:var(--muted)"> / 8</span></div><div class="stat-lbl">current week — ' + esc(cw.title) + "</div></div>";
+    html += "</div>";
+
+    if (due.length) {
+      html += '<h2 class="vtitle">reviewsDue <span class="cmt">// solve again without looking at the solution</span></h2>';
+      html += qlist(due, true);
+    }
+
+    var next = cw.questions.filter(function (q) { return qs(q.id).status !== "solved"; });
+    html += '<h2 class="vtitle">continue <span class="cmt">// week ' + cw.week + ' · ' + esc(cw.title) + ' · ' + cwStats.solved + "/" + cwStats.total + " done</span></h2>";
+    if (next.length) html += qlist(next, false);
+    else html += '<div class="qlist"><div class="empty"><span class="big">✓</span>Week ' + cw.week + " is fully solved.</div></div>";
+
+    if (solved >= 5) {
+      html += '<div class="banner"><p><b>Weekly re-solve.</b> Repetition is where it sticks — pull 5 random solved questions back into today\'s review queue.</p><button data-action="shuffle5">Queue 5 for review</button></div>';
+    }
+    if (!due.length && !next.length) {
+      html += '<div class="empty"><span class="big">🎉</span>All 58 solved and nothing due. Go do mock interviews.</div>';
+    }
+    return html;
+  }
+
+  function viewWeek(w) {
+    var st = weekStats(w);
+    var html = '<h2 class="vtitle" style="margin-top:0">week0' + w.week + " — " + esc(w.title) + ' <span class="cmt">// ' + st.solved + "/" + st.total + " solved</span></h2>";
+    html += '<div class="vgoal">' + esc(w.goal) + "</div>";
+    html += '<div class="patterns">' + w.patterns.map(function (p) { return '<span class="chip">' + esc(p) + "</span>"; }).join("") + "</div>";
+    if (st.solved === st.total && st.total > 0) {
+      html += '<div class="banner"><p><b>Week done.</b> Before moving on, re-solve a few from memory — queue 5 random earlier questions for review.</p><button data-action="shuffle5">Queue 5 for review</button></div>';
+    }
+    html += qlist(w.questions, false);
+    return html;
+  }
+
+  function qlist(questions, reviewMode) {
+    var html = '<div class="qlist">';
+    questions.forEach(function (q) { html += qrow(q, reviewMode); });
+    html += "</div>";
+    return html;
+  }
+
+  function statusDot(st) {
+    if (isDue(st)) return '<span class="due" title="review due">↻</span>';
+    if (isMastered(st)) return '<span class="dot mastered" title="mastered"></span>';
+    if (st.status === "solved") return '<span class="dot solved" title="solved"></span>';
+    if (st.status === "attempted") return '<span class="dot attempted" title="attempted"></span>';
+    return '<span class="dot todo" title="not started"></span>';
+  }
+
+  function qrow(q, reviewMode) {
+    var st = qs(q.id);
+    var open = openRows[q.id] ? " open" : "";
+    var html = '<div class="qrow' + open + '" data-qid="' + q.id + '">';
+    html += '<button class="qhead" data-action="toggle" aria-expanded="' + (openRows[q.id] ? "true" : "false") + '">';
+    html += '<span class="gutter">' + statusDot(st) + "</span>";
+    html += '<span class="qtitle">' + esc(q.title) + '<span class="qsub">' + esc(q.pattern) + " · week " + q._week + "</span></span>";
+    html += '<span class="diff ' + q.difficulty + '">' + q.difficulty + "</span>";
+    html += '<span class="caret">▶</span></button>';
+    html += '<div class="qbody">' + (openRows[q.id] ? qbody(q, st, reviewMode) : "") + "</div></div>";
+    return html;
+  }
+
+  function qbody(q, st, reviewMode) {
+    var html = '<div class="qsummary">' + esc(q.summary) + "</div>";
+    html += '<div class="qmeta"><a href="' + esc(q.url) + '" target="_blank" rel="noopener">Open on LeetCode ↗</a><span class="pat">pattern: ' + esc(q.pattern) + "</span></div>";
+
+    html += '<div class="reveals">';
+    html += '<button class="rbtn" data-action="reveal" data-panel="h1">Hint 1</button>';
+    html += '<button class="rbtn" data-action="reveal" data-panel="h2">Hint 2</button>';
+    html += '<button class="rbtn" data-action="reveal" data-panel="ex">Approach</button>';
+    html += '<button class="rbtn" data-action="reveal" data-panel="ko">Kotlin solution</button>';
+    html += "</div>";
+    html += '<div class="rpanel" data-panel="h1"><h4>hint 1</h4><p>' + esc(q.hints[0] || "") + "</p></div>";
+    html += '<div class="rpanel" data-panel="h2"><h4>hint 2</h4><p>' + esc(q.hints[1] || "") + "</p></div>";
+    html += '<div class="rpanel" data-panel="ex"><h4>approach</h4>' + paras(q.explanation);
+    if (q.pitfalls && q.pitfalls.length) {
+      html += "<h4 style='margin-top:10px'>pitfalls</h4><ul>" + q.pitfalls.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>";
+    }
+    html += "</div>";
+    html += '<div class="rpanel" data-panel="ko"><h4>kotlin · ' + esc(q.complexity) + '</h4><pre class="code">' + highlightKotlin(q.kotlin) + "</pre></div>";
+
+    html += '<div class="actions">';
+    if (isDue(st)) {
+      html += '<button class="abtn review" data-action="review-ok">Re-solved it ✓</button>';
+      html += '<button class="abtn struggled" data-action="review-fail">Struggled — reset to +2d</button>';
+    } else {
+      html += '<button class="abtn attempted' + (st.status === "attempted" ? " on" : "") + '" data-action="attempted">Attempted</button>';
+      html += '<button class="abtn solved' + (st.status === "solved" ? " on" : "") + '" data-action="solved">Solved ✓</button>';
+    }
+    if (st.status !== "todo") html += '<button class="abtn reset" data-action="reset-q">reset</button>';
+    html += "</div>";
+    html += '<div class="qstate">' + stateLine(st) + "</div>";
+
+    html += '<div class="notes"><label for="n-' + q.id + '">notes / what tripped me up</label>';
+    html += '<textarea id="n-' + q.id + '" dir="auto" data-action="notes" placeholder="e.g. forgot to shrink the window before updating the max…">' + esc(st.notes || "") + "</textarea>";
+    html += '<div class="savehint">saved ✓</div></div>';
+    return html;
+  }
+
+  function stateLine(st) {
+    if (isMastered(st)) return "solved " + st.solvedAt + " · all 3 reviews done · mastered ✦";
+    if (st.status === "solved") {
+      var s = "solved " + st.solvedAt + " · review " + (st.stage + 1) + "/3";
+      if (st.nextReview) s += " " + (st.nextReview <= today() ? "due now" : "on " + st.nextReview);
+      return s;
+    }
+    if (st.status === "attempted") return "attempted — come back to it";
+    return "not started";
+  }
+
+  /* ---------- journal ---------- */
+  function viewJournal() {
+    var html = '<h2 class="vtitle" style="margin-top:0">journal <span class="cmt">// issues, aha-moments, things to re-check</span></h2>';
+    html += '<div class="jnew"><textarea id="jnew" dir="auto" placeholder="What did you learn or struggle with today?"></textarea>';
+    html += '<button data-action="jadd">Add entry</button></div>';
+    var items = S.journal.slice().reverse();
+    if (!items.length) html += '<div class="empty"><span class="big">✎</span>No entries yet. After each session, write one line about what was hard.</div>';
+    items.forEach(function (e) {
+      html += '<div class="jentry" data-ts="' + e.ts + '"><div class="jdate"><span>' + esc(e.date) + '</span><button class="jdel" data-action="jdel">delete</button></div><div class="jtext" dir="auto">' + esc(e.text) + "</div></div>";
+    });
+    return html;
+  }
+
+  /* ---------- guide ---------- */
+  var TOPICS = ["Big O — time & space", "HashMap & HashSet internals", "ArrayList vs LinkedList", "Queue & Deque (ArrayDeque)", "PriorityQueue (Heap)", "DFS & BFS", "Recursion", "Tree traversals (pre/in/post/level)", "Union Find"];
+  function viewGuide() {
+    var html = '<div class="guide" dir="rtl" lang="he">';
+    html += "<h3>איך לפתור כל שאלה</h3><ol>";
+    html += "<li>קרא את השאלה. אל תקפוץ ישר לקוד.</li>";
+    html += "<li>חשוב 15–20 דקות לבד.</li>";
+    html += "<li>נתקעת? פתח את <b>רמז 1</b> (ואז רמז 2 אם צריך).</li>";
+    html += "<li>עדיין לא? קרא את ה־Approach.</li>";
+    html += "<li>סגור את ההסבר וכתוב את הפתרון לבד ב־Kotlin.</li>";
+    html += "<li>סמן ✓ Solved — האפליקציה תזמן חזרה אוטומטית אחרי יומיים, שבוע ושלושה שבועות.</li>";
+    html += "<li>כשחזרה מופיעה ב־Today — פתור שוב בלי להציץ בפתרון.</li>";
+    html += "</ol>";
+    html += "<h3>אחרי כל שבוע</h3><p>פתור שוב 5–10 שאלות שכבר עשית, בלי להסתכל על הפתרון. הכפתור \"Queue 5 for review\" עושה את זה בשבילך. החזרה היא חלק חשוב מהלמידה.</p>";
+    html += "</div>";
+    html += '<div class="guide" style="margin-top:16px">';
+    html += "<h3>Parallel topics for Kotlin/Java backend interviews</h3>";
+    html += '<ul class="topiclist">';
+    TOPICS.forEach(function (t, i) {
+      var done = S.topics[i];
+      html += '<li><input type="checkbox" id="t' + i + '" data-action="topic" data-i="' + i + '"' + (done ? " checked" : "") + '><label for="t' + i + '" class="' + (done ? "done" : "") + '">' + esc(t) + "</label></li>";
+    });
+    html += "</ul></div>";
+    return html;
+  }
+
+  /* ---------- events ---------- */
+  var openRows = {};
+  document.addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-action],[data-nav]");
+    if (!t) return;
+    if (t.dataset.nav) { route.view = t.dataset.nav; render(); return; }
+    var act = t.dataset.action;
+    var row = t.closest(".qrow");
+    var qid = row ? row.dataset.qid : null;
+
+    if (act === "toggle" && qid) {
+      openRows[qid] = !openRows[qid];
+      render();
+    } else if (act === "reveal") {
+      var panel = t.closest(".qbody").querySelector('.rpanel[data-panel="' + t.dataset.panel + '"]');
+      panel.classList.toggle("shown"); t.classList.toggle("shown");
+    } else if (act === "attempted" && qid) {
+      var st = qs(qid);
+      st.status = st.status === "attempted" ? "todo" : "attempted";
+      save(); render();
+    } else if (act === "solved" && qid) {
+      var st2 = qs(qid);
+      if (st2.status === "solved") { st2.status = "attempted"; st2.nextReview = null; }
+      else { st2.status = "solved"; st2.solvedAt = today(); st2.stage = 0; st2.nextReview = addDays(today(), INTERVALS[0]); }
+      save(); render();
+    } else if (act === "review-ok" && qid) {
+      var st3 = qs(qid);
+      st3.stage++;
+      st3.nextReview = st3.stage < INTERVALS.length ? addDays(today(), INTERVALS[st3.stage]) : null;
+      save(); render();
+    } else if (act === "review-fail" && qid) {
+      var st4 = qs(qid);
+      st4.stage = 0; st4.nextReview = addDays(today(), INTERVALS[0]);
+      save(); render();
+    } else if (act === "reset-q" && qid) {
+      S.q[qid] = { status: "todo", solvedAt: null, stage: 0, nextReview: null, notes: qs(qid).notes };
+      save(); render();
+    } else if (act === "shuffle5") {
+      var pool = ALLQ.filter(function (q) { var s = qs(q.id); return s.status === "solved" && !isDue(s); });
+      for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp; }
+      pool.slice(0, 5).forEach(function (q) { qs(q.id).nextReview = today(); });
+      save(); route.view = "today"; render();
+    } else if (act === "jadd") {
+      var ta = document.getElementById("jnew");
+      var txt = ta.value.trim();
+      if (txt) { S.journal.push({ ts: Date.now(), date: today(), text: txt }); save(); render(); }
+    } else if (act === "jdel") {
+      var ts = +t.closest(".jentry").dataset.ts;
+      S.journal = S.journal.filter(function (e) { return e.ts !== ts; });
+      save(); render();
+    } else if (act === "topic") {
+      S.topics[t.dataset.i] = t.checked; save();
+      var lbl = document.querySelector('label[for="' + t.id + '"]');
+      if (lbl) lbl.classList.toggle("done", t.checked);
+    } else if (act === "export") {
+      var blob = new Blob([JSON.stringify(S, null, 2)], { type: "application/json" });
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "leetcode-progress-" + today() + ".json";
+      a.click(); URL.revokeObjectURL(a.href);
+    } else if (act === "import") {
+      document.getElementById("importfile").click();
+    } else if (act === "theme") {
+      var cur = document.documentElement.dataset.theme || "light";
+      var next = cur === "dark" ? "light" : "dark";
+      document.documentElement.dataset.theme = next;
+      S.theme = next; save();
+    }
+  });
+
+  var noteTimer = null;
+  document.addEventListener("input", function (ev) {
+    var t = ev.target;
+    if (t.dataset.action !== "notes") return;
+    var row = t.closest(".qrow");
+    if (!row) return;
+    var qid = row.dataset.qid;
+    clearTimeout(noteTimer);
+    noteTimer = setTimeout(function () {
+      qs(qid).notes = t.value; save();
+      var hint = t.parentElement.querySelector(".savehint");
+      if (hint) { hint.classList.add("on"); setTimeout(function () { hint.classList.remove("on"); }, 1200); }
+      renderNav();
+    }, 450);
+  });
+
+  document.getElementById("importfile").addEventListener("change", function (ev) {
+    var f = ev.target.files[0];
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var imported = JSON.parse(r.result);
+        if (!imported || typeof imported.q !== "object") throw new Error("bad file");
+        S = imported; S.q = S.q || {}; S.journal = S.journal || []; S.topics = S.topics || {};
+        save(); render();
+      } catch (e) { alert("That file is not a valid progress export."); }
+    };
+    r.readAsText(f);
+    ev.target.value = "";
+  });
+
+  /* ---------- init ---------- */
+  if (S.theme === "dark" || (S.theme === "auto" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+    document.documentElement.dataset.theme = "dark";
+  }
+  if (!WEEKS.length) {
+    document.getElementById("viewroot").innerHTML = '<div class="empty"><span class="big">⚠</span>No question data found. Make sure the data/ folder with week1.js–week8.js sits next to index.html.</div>';
+  } else {
+    var hashQ = (location.hash || "").replace(/^#q-/, "");
+    if (hashQ && QBYID[hashQ]) {
+      openRows[hashQ] = true;
+      route.view = "week-" + QBYID[hashQ]._week;
+    }
+    render();
+    if (hashQ && QBYID[hashQ]) {
+      var el = document.querySelector('.qrow[data-qid="' + hashQ + '"]');
+      if (el) el.scrollIntoView({ block: "start" });
+    }
+  }
+})();
+</script>
+</body>
+</html>
