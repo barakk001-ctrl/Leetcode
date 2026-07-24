@@ -3,6 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#6b47d6">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>Kotlin Grind — 8-Week LeetCode Plan</title>
 <style>
   :root {
@@ -225,6 +229,50 @@
   .savehint { font-size: 11px; color: var(--muted); margin-top: 2px; visibility: hidden; }
   .savehint.on { visibility: visible; color: var(--green); }
 
+  /* timer */
+  .qtimer {
+    font-family: Consolas, monospace; font-size: 12.5px; color: var(--ink2);
+    background: var(--surface2); border-radius: 6px; padding: 6px 10px; align-self: center;
+  }
+  .qtimer.warn { color: var(--orange); font-weight: 700; }
+  .nudge { font-size: 12.5px; color: var(--orange); margin-top: 6px; font-weight: 600; display: none; }
+  .nudge.on { display: block; }
+
+  /* sync */
+  #syncstatus { font-size: 11px; color: var(--muted); text-align: center; font-family: Consolas, monospace; min-height: 14px; }
+  #syncstatus.ok { color: var(--green); }
+  #syncstatus.bad { color: var(--orange); }
+
+  /* stats */
+  .heatwrap { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; box-shadow: var(--shadow); overflow-x: auto; }
+  .heatgrid { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 12px); gap: 3px; width: max-content; }
+  .heatgrid i { width: 12px; height: 12px; border-radius: 3px; background: var(--track); }
+  .heatgrid i.h1 { background: var(--accent); opacity: .35; }
+  .heatgrid i.h2 { background: var(--accent); opacity: .65; }
+  .heatgrid i.h3 { background: var(--accent); opacity: 1; }
+  .heatlegend { display: flex; align-items: center; gap: 4px; margin-top: 8px; font-size: 11px; color: var(--muted); font-family: Consolas, monospace; }
+  .heatlegend i { width: 10px; height: 10px; border-radius: 3px; background: var(--track); display: inline-block; }
+  .statstable { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); font-size: 13px; }
+  .statstable th { font-family: Consolas, monospace; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); font-weight: 600; }
+  .statstable td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  .statstable tr:last-child td { border-bottom: none; }
+  .statstable .good { color: var(--green); font-weight: 600; }
+  .statstable .warn { color: var(--orange); font-weight: 600; }
+  .statstable .num { font-family: Consolas, monospace; }
+  .tablewrap { overflow-x: auto; }
+
+  /* mock */
+  .mockcard { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px 28px; box-shadow: var(--shadow); }
+  .mocktimer { font-family: Consolas, monospace; font-size: 42px; font-weight: 700; text-align: center; margin: 14px 0; }
+  .mocktimer.low { color: var(--orange); }
+  .mocktimer.out { color: var(--hard); }
+  .mockq { text-align: center; margin: 10px 0 18px; }
+  .mockq .mtitle { font-size: 20px; font-weight: 700; }
+  .mockbtns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .primarybtn { background: var(--accent); color: #fff; border: none; border-radius: 8px; padding: 10px 20px; font-size: 14px; font-weight: 700; min-height: 40px; }
+  .mockhist { margin-top: 16px; }
+  .mockhist .jentry { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; }
+
   /* learn panel */
   .learnbox { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 14px; box-shadow: var(--shadow); overflow: hidden; }
   .learnhead {
@@ -310,6 +358,11 @@
       <div class="row">
         <button class="ghostbtn" data-action="theme">Light / Dark</button>
       </div>
+      <div class="row">
+        <button class="ghostbtn" data-action="sync-now">Sync now</button>
+        <button class="ghostbtn" data-action="sync-key">Key…</button>
+      </div>
+      <div id="syncstatus"></div>
       <input type="file" id="importfile" accept=".json" hidden>
     </div>
   </aside>
@@ -345,19 +398,36 @@
   var STORE_KEY = "lc-tracker-v1";
 
   /* ---------- state ---------- */
-  function blankState() { return { q: {}, journal: [], topics: {}, theme: "auto" }; }
+  function blankState() { return { q: {}, journal: [], topics: {}, activity: {}, mocks: [], theme: "auto", rev: 0 }; }
   var S = load();
   function load() {
     try {
       var raw = localStorage.getItem(STORE_KEY);
-      if (raw) { var s = JSON.parse(raw); s.q = s.q || {}; s.journal = s.journal || []; s.topics = s.topics || {}; return s; }
+      if (raw) {
+        var s = JSON.parse(raw);
+        s.q = s.q || {}; s.journal = s.journal || []; s.topics = s.topics || {};
+        s.activity = s.activity || {}; s.mocks = s.mocks || []; s.rev = s.rev || 0;
+        return s;
+      }
     } catch (e) {}
     return blankState();
   }
-  function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {} }
+  function save() {
+    S.rev = Date.now();
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {}
+    scheduleSync();
+  }
   function qs(id) {
-    if (!S.q[id]) S.q[id] = { status: "todo", solvedAt: null, stage: 0, nextReview: null, notes: "" };
+    if (!S.q[id]) S.q[id] = { status: "todo", solvedAt: null, stage: 0, nextReview: null, notes: "", ts: 0, timeSec: 0, hints: {} };
     return S.q[id];
+  }
+  function touch(st) { st.ts = Date.now(); }
+  function bumpActivity() { var d = today(); S.activity[d] = (S.activity[d] || 0) + 1; }
+  function fmtDur(sec) {
+    sec = Math.round(sec);
+    var m = Math.floor(sec / 60), s = sec % 60;
+    if (m >= 60) return Math.floor(m / 60) + "h " + (m % 60) + "m";
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
   }
 
   /* ---------- dates ---------- */
@@ -425,6 +495,8 @@
       html += navItem("week-" + w.week, "wk0" + w.week + "  " + w.title, '<span class="ncount">' + st.solved + "/" + st.total + "</span>" + meter);
     });
     html += '<div class="navsec">extras</div>';
+    html += navItem("stats", "∑ Stats", "");
+    html += navItem("mock", "⏱ Mock interview", "");
     html += navItem("journal", "✎ Journal", "");
     html += navItem("guide", "ℹ Guide", "");
     document.getElementById("nav").innerHTML = html;
@@ -441,6 +513,8 @@
     if (route.view === "today") root.innerHTML = viewToday();
     else if (route.view === "journal") root.innerHTML = viewJournal();
     else if (route.view === "guide") root.innerHTML = viewGuide();
+    else if (route.view === "stats") root.innerHTML = viewStats();
+    else if (route.view === "mock") root.innerHTML = viewMock();
     else {
       var n = +route.view.split("-")[1];
       var w = WEEKS.filter(function (x) { return x.week === n; })[0];
@@ -581,7 +655,9 @@
       html += '<button class="abtn solved' + (st.status === "solved" ? " on" : "") + '" data-action="solved">Solved ✓</button>';
     }
     if (st.status !== "todo") html += '<button class="abtn reset" data-action="reset-q">reset</button>';
+    if (st.status !== "solved") html += '<span class="qtimer" data-qtimer="' + q.id + '">' + fmtDur(st.timeSec || 0) + "</span>";
     html += "</div>";
+    if (st.status !== "solved") html += '<div class="nudge" data-nudge="' + q.id + '"></div>';
     html += '<div class="qstate">' + stateLine(st) + "</div>";
 
     html += '<div class="notes"><label for="n-' + q.id + '">notes / what tripped me up</label>';
@@ -591,14 +667,130 @@
   }
 
   function stateLine(st) {
-    if (isMastered(st)) return "solved " + st.solvedAt + " · all 3 reviews done · mastered ✦";
+    var timeNote = st.solveTime ? " · solved in " + fmtDur(st.solveTime) : "";
+    var hintNote = st.hints && (st.hints.h1 || st.hints.h2 || st.hints.ex || st.hints.ko) ? " · used help" : "";
+    if (isMastered(st)) return "solved " + st.solvedAt + timeNote + " · all 3 reviews done · mastered ✦";
     if (st.status === "solved") {
-      var s = "solved " + st.solvedAt + " · review " + (st.stage + 1) + "/3";
+      var s = "solved " + st.solvedAt + timeNote + hintNote + " · review " + (st.stage + 1) + "/3";
       if (st.nextReview) s += " " + (st.nextReview <= today() ? "due now" : "on " + st.nextReview);
       return s;
     }
     if (st.status === "attempted") return "attempted — come back to it";
     return "not started";
+  }
+
+  /* ---------- stats ---------- */
+  function usedHelp(st) {
+    return !!(st.hints && (st.hints.h1 || st.hints.h2 || st.hints.ex || st.hints.ko));
+  }
+  function streak() {
+    var n = 0, d = today();
+    if (!S.activity[d]) d = addDays(d, -1); // today not started yet doesn't break the streak
+    while (S.activity[d]) { n++; d = addDays(d, -1); }
+    return n;
+  }
+  function viewStats() {
+    var solved = ALLQ.filter(function (q) { return qs(q.id).status === "solved"; });
+    var noHelp = solved.filter(function (q) { return !usedHelp(qs(q.id)); });
+    var totalSec = 0;
+    ALLQ.forEach(function (q) { totalSec += qs(q.id).timeSec || 0; });
+    var mockWins = S.mocks.filter(function (m) { return m.ok; }).length;
+
+    var html = '<h2 class="vtitle" style="margin-top:0">stats <span class="cmt">// where you stand</span></h2>';
+    html += '<div class="stats">';
+    html += '<div class="stat"><div class="stat-num' + (streak() > 0 ? " ok" : "") + '">' + streak() + '</div><div class="stat-lbl">day streak</div></div>';
+    html += '<div class="stat"><div class="stat-num">' + (totalSec ? fmtDur(totalSec) : "0m") + '</div><div class="stat-lbl">total time on questions</div></div>';
+    html += '<div class="stat"><div class="stat-num">' + noHelp.length + '<span style="font-size:14px;color:var(--muted)"> / ' + solved.length + '</span></div><div class="stat-lbl">solved without help</div></div>';
+    html += '<div class="stat"><div class="stat-num">' + mockWins + '<span style="font-size:14px;color:var(--muted)"> / ' + S.mocks.length + '</span></div><div class="stat-lbl">mock interviews won</div></div>';
+    html += "</div>";
+
+    // activity heatmap: last 16 weeks, columns = weeks, rows = Sun..Sat
+    html += '<h2 class="vtitle">activity <span class="cmt">// one square per day</span></h2>';
+    var end = today();
+    var endDow = new Date(end + "T12:00:00").getDay();
+    var cells = [];
+    var start = addDays(end, -(16 * 7 - 1) - endDow + 6); // align so the last column ends on today
+    var d = start;
+    while (d <= end) { cells.push(d); d = addDays(d, 1); }
+    html += '<div class="heatwrap"><div class="heatgrid" role="img" aria-label="Daily activity for the last 16 weeks">';
+    cells.forEach(function (day) {
+      var c = S.activity[day] || 0;
+      var cls = c === 0 ? "" : c === 1 ? "h1" : c <= 3 ? "h2" : "h3";
+      html += '<i class="' + cls + '" title="' + day + " · " + c + ' actions"></i>';
+    });
+    html += '</div><div class="heatlegend"><span>less</span><i></i><i class="h1" style="background:var(--accent);opacity:.35"></i><i style="background:var(--accent);opacity:.65"></i><i style="background:var(--accent)"></i><span>more</span></div></div>';
+
+    // per-topic table
+    html += '<h2 class="vtitle">byTopic <span class="cmt">// weak spots first — re-drill anything orange</span></h2>';
+    html += '<div class="tablewrap"><table class="statstable"><tr><th>topic</th><th>solved</th><th>no help</th><th>avg time</th><th>failed reviews</th></tr>';
+    WEEKS.forEach(function (w) {
+      var ws = w.questions.map(function (q) { return qs(q.id); });
+      var wSolved = ws.filter(function (s) { return s.status === "solved"; });
+      var wNoHelp = wSolved.filter(function (s) { return !usedHelp(s); });
+      var timed = wSolved.filter(function (s) { return s.solveTime; });
+      var avg = timed.length ? timed.reduce(function (a, s) { return a + s.solveTime; }, 0) / timed.length : 0;
+      var fails = ws.reduce(function (a, s) { return a + (s.failedReviews || 0); }, 0);
+      var helpRate = wSolved.length ? wNoHelp.length / wSolved.length : 1;
+      html += "<tr><td>" + esc(w.title) + '</td><td class="num">' + wSolved.length + "/" + w.questions.length + "</td>";
+      html += '<td class="num ' + (wSolved.length && helpRate < 0.5 ? "warn" : wSolved.length ? "good" : "") + '">' + wNoHelp.length + "/" + wSolved.length + "</td>";
+      html += '<td class="num">' + (avg ? fmtDur(avg) : "—") + "</td>";
+      html += '<td class="num' + (fails > 1 ? " warn" : "") + '">' + fails + "</td></tr>";
+    });
+    html += "</table></div>";
+
+    // slowest solves
+    var slow = ALLQ.filter(function (q) { return qs(q.id).solveTime; })
+      .sort(function (a, b) { return qs(b.id).solveTime - qs(a.id).solveTime; }).slice(0, 3);
+    if (slow.length) {
+      html += '<h2 class="vtitle">hardestSoFar <span class="cmt">// good candidates for a mock re-run</span></h2>';
+      html += '<div class="qlist">' + slow.map(function (q) { return qrow(q, false); }).join("") + "</div>";
+    }
+    return html;
+  }
+
+  /* ---------- mock interview ---------- */
+  var mock = null; // {qid, started, ends}
+  var lastMockResult = null;
+  function viewMock() {
+    var html = '<h2 class="vtitle" style="margin-top:0">mockInterview <span class="cmt">// 25 minutes, no hints, no solution</span></h2>';
+    if (mock) {
+      var q = QBYID[mock.qid];
+      html += '<div class="mockcard">';
+      html += '<div class="mocktimer" data-mocktimer>25:00</div>';
+      html += '<div class="mockq"><div class="mtitle">' + esc(q.title) + ' <span class="diff ' + q.difficulty + '">' + q.difficulty + "</span></div>";
+      html += '<div class="qsummary" style="margin-top:6px">' + esc(q.summary) + "</div>";
+      html += '<div class="qmeta" style="justify-content:center;margin-top:8px"><a href="' + esc(q.url) + '" target="_blank" rel="noopener">Open on LeetCode ↗</a></div></div>';
+      html += '<div class="mockbtns"><button class="primarybtn" data-action="mock-solved">I solved it ✓</button>';
+      html += '<button class="ghostbtn" style="flex:0 0 auto;padding:10px 20px" data-action="mock-giveup">Give up — show me the approach</button></div>';
+      html += "</div>";
+      html += '<div class="empty" style="padding:16px">Talk out loud while you solve — state the pattern, the approach, and the complexity before you code. That\'s half the interview.</div>';
+    } else {
+      if (lastMockResult) {
+        html += '<div class="banner"><p>' + lastMockResult + "</p></div>";
+        lastMockResult = null;
+      }
+      html += '<div class="mockcard" style="text-align:center">';
+      html += '<p style="color:var(--ink2);font-size:14px;max-width:460px;margin:0 auto 16px">A random question — unseen, or solved more than a week ago. You get 25 minutes, no hints, and no solution. As close to the real thing as it gets.</p>';
+      html += '<button class="primarybtn" data-action="mock-start">Start mock interview</button></div>';
+      var hist = S.mocks.slice().reverse().slice(0, 5);
+      if (hist.length) {
+        html += '<h2 class="vtitle">history</h2><div class="mockhist">';
+        hist.forEach(function (m) {
+          var q = QBYID[m.qid];
+          html += '<div class="jentry"><span>' + esc(q ? q.title : m.qid) + '</span><span class="num ' + (m.ok ? "good" : "warn") + '" style="font-family:Consolas,monospace">' + (m.ok ? "✓ " + fmtDur(m.sec) : "✗ gave up") + " · " + esc(m.date) + "</span></div>";
+        });
+        html += "</div>";
+      }
+    }
+    return html;
+  }
+  function mockPool() {
+    var weekAgo = addDays(today(), -7);
+    var pool = ALLQ.filter(function (q) {
+      var st = qs(q.id);
+      return st.status !== "solved" || (st.solvedAt && st.solvedAt <= weekAgo);
+    });
+    return pool.length ? pool : ALLQ;
   }
 
   /* ---------- journal ---------- */
@@ -652,6 +844,8 @@
 
     if (act === "toggle" && qid) {
       openRows[qid] = !openRows[qid];
+      if (openRows[qid]) { if (qs(qid).status !== "solved") startTimer(qid); }
+      else if (flushTimer(qid)) save();
       render();
     } else if (act === "learn-toggle") {
       var lw = t.closest(".learnbox").dataset.learn;
@@ -660,27 +854,79 @@
     } else if (act === "reveal") {
       var panel = t.closest(".qbody").querySelector('.rpanel[data-panel="' + t.dataset.panel + '"]');
       panel.classList.toggle("shown"); t.classList.toggle("shown");
+      if (qid && panel.classList.contains("shown")) {
+        var hst = qs(qid);
+        if (hst.status !== "solved" && !(hst.hints || {})[t.dataset.panel]) {
+          hst.hints = hst.hints || {};
+          hst.hints[t.dataset.panel] = true;
+          touch(hst); save();
+        }
+      }
     } else if (act === "attempted" && qid) {
       var st = qs(qid);
       st.status = st.status === "attempted" ? "todo" : "attempted";
-      save(); render();
+      touch(st); bumpActivity(); save(); render();
     } else if (act === "solved" && qid) {
       var st2 = qs(qid);
-      if (st2.status === "solved") { st2.status = "attempted"; st2.nextReview = null; }
-      else { st2.status = "solved"; st2.solvedAt = today(); st2.stage = 0; st2.nextReview = addDays(today(), INTERVALS[0]); }
-      save(); render();
+      if (st2.status === "solved") { st2.status = "attempted"; st2.nextReview = null; st2.solveTime = null; }
+      else {
+        flushTimer(qid);
+        st2.status = "solved"; st2.solvedAt = today(); st2.stage = 0; st2.nextReview = addDays(today(), INTERVALS[0]);
+        st2.solveTime = st2.timeSec || null;
+        bumpActivity();
+      }
+      touch(st2); save(); render();
     } else if (act === "review-ok" && qid) {
       var st3 = qs(qid);
       st3.stage++;
       st3.nextReview = st3.stage < INTERVALS.length ? addDays(today(), INTERVALS[st3.stage]) : null;
-      save(); render();
+      touch(st3); bumpActivity(); save(); render();
     } else if (act === "review-fail" && qid) {
       var st4 = qs(qid);
       st4.stage = 0; st4.nextReview = addDays(today(), INTERVALS[0]);
-      save(); render();
+      st4.failedReviews = (st4.failedReviews || 0) + 1;
+      touch(st4); bumpActivity(); save(); render();
     } else if (act === "reset-q" && qid) {
-      S.q[qid] = { status: "todo", solvedAt: null, stage: 0, nextReview: null, notes: qs(qid).notes };
+      S.q[qid] = { status: "todo", solvedAt: null, stage: 0, nextReview: null, notes: qs(qid).notes, ts: Date.now(), timeSec: 0, hints: {} };
       save(); render();
+    } else if (act === "mock-start") {
+      var pool = mockPool();
+      var pick = pool[Math.floor(Math.random() * pool.length)];
+      mock = { qid: pick.id, started: Date.now(), ends: Date.now() + 25 * 60 * 1000 };
+      render();
+    } else if (act === "mock-solved") {
+      var mq = qs(mock.qid);
+      var sec = Math.round((Date.now() - mock.started) / 1000);
+      S.mocks.push({ qid: mock.qid, date: today(), ok: true, sec: sec, ts: Date.now() });
+      if (mq.status !== "solved") {
+        mq.status = "solved"; mq.solvedAt = today(); mq.stage = 0;
+        mq.nextReview = addDays(today(), INTERVALS[0]);
+        mq.timeSec = (mq.timeSec || 0) + sec; mq.solveTime = mq.timeSec;
+      } else if (isDue(mq)) {
+        mq.stage++;
+        mq.nextReview = mq.stage < INTERVALS.length ? addDays(today(), INTERVALS[mq.stage]) : null;
+      }
+      touch(mq); bumpActivity();
+      lastMockResult = "<b>Nailed it in " + fmtDur(sec) + ".</b> " + esc(QBYID[mock.qid].title) + " is marked solved and scheduled for review.";
+      mock = null; save(); render();
+    } else if (act === "mock-giveup") {
+      S.mocks.push({ qid: mock.qid, date: today(), ok: false, sec: Math.round((Date.now() - mock.started) / 1000), ts: Date.now() });
+      var gq = mock.qid;
+      mock = null; save();
+      openRows[gq] = true;
+      route.view = "week-" + QBYID[gq]._week;
+      render();
+      var el = document.querySelector('.qrow[data-qid="' + gq + '"]');
+      if (el) el.scrollIntoView({ block: "start" });
+    } else if (act === "sync-now") {
+      syncNow();
+    } else if (act === "sync-key") {
+      var k = prompt("Sync passphrase — use the SAME one on your PC and phone (min 6 characters).\nLeave empty and press OK to turn sync off:", getSyncKey());
+      if (k === null) return;
+      k = k.trim();
+      if (!k) { localStorage.removeItem(SYNC_KEY_LS); setSyncStatus("off"); }
+      else if (k.length < 6) { alert("Passphrase must be at least 6 characters."); }
+      else { localStorage.setItem(SYNC_KEY_LS, k); syncNow(); }
     } else if (act === "shuffle5") {
       var pool = ALLQ.filter(function (q) { var s = qs(q.id); return s.status === "solved" && !isDue(s); });
       for (var i = pool.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp; }
@@ -746,6 +992,147 @@
     ev.target.value = "";
   });
 
+  /* ---------- solve timer ---------- */
+  var timers = {}; // qid -> {start}
+  function startTimer(qid) { if (!timers[qid]) timers[qid] = { start: Date.now() }; }
+  function flushTimer(qid) {
+    var tm = timers[qid];
+    if (!tm) return false;
+    var st = qs(qid);
+    st.timeSec = (st.timeSec || 0) + Math.round((Date.now() - tm.start) / 1000);
+    delete timers[qid];
+    touch(st);
+    return true;
+  }
+  function flushAllTimers() {
+    var any = false;
+    Object.keys(timers).forEach(function (qid) { any = flushTimer(qid) || any; });
+    if (any) save();
+  }
+  setInterval(function () {
+    var now = Date.now();
+    document.querySelectorAll("[data-qtimer]").forEach(function (el) {
+      var qid = el.dataset.qtimer;
+      var st = qs(qid);
+      var sec = (st.timeSec || 0) + (timers[qid] ? (now - timers[qid].start) / 1000 : 0);
+      el.textContent = "⏱ " + fmtDur(sec);
+      el.classList.toggle("warn", sec >= 15 * 60);
+      var nudge = document.querySelector('[data-nudge="' + qid + '"]');
+      if (nudge) {
+        var msg = "";
+        if (sec >= 25 * 60) msg = "25+ min — read the approach, close it, then write the solution yourself.";
+        else if (sec >= 20 * 60) msg = "20 min — take Hint 2, or read the approach and re-derive it.";
+        else if (sec >= 15 * 60) msg = "15 min — per your method, take Hint 1 now.";
+        nudge.textContent = msg;
+        nudge.classList.toggle("on", !!msg);
+      }
+    });
+    var mt = document.querySelector("[data-mocktimer]");
+    if (mt && mock) {
+      var left = Math.max(0, Math.round((mock.ends - now) / 1000));
+      mt.textContent = left > 0 ? fmtDur(left) : "00:00 — time!";
+      mt.classList.toggle("low", left > 0 && left <= 5 * 60);
+      mt.classList.toggle("out", left === 0);
+    }
+  }, 1000);
+  window.addEventListener("beforeunload", flushAllTimers);
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "hidden") flushAllTimers();
+  });
+
+  /* ---------- sync ---------- */
+  var SYNC_KEY_LS = "lc-sync-key";
+  function getSyncKey() { return localStorage.getItem(SYNC_KEY_LS) || ""; }
+  function setSyncStatus(mode, extra) {
+    var el = document.getElementById("syncstatus");
+    if (!el) return;
+    el.className = mode === "ok" ? "ok" : mode === "offline" || mode === "error" ? "bad" : "";
+    var labels = {
+      off: "sync off — set a key to sync devices",
+      syncing: "syncing…",
+      ok: "synced ✓ " + new Date().toTimeString().slice(0, 5),
+      offline: "offline — progress saved locally",
+      error: "sync error" + (extra ? ": " + extra : ""),
+    };
+    el.textContent = labels[mode] || "";
+  }
+  function mergeStates(local, remote) {
+    var m = blankState();
+    m.theme = local.theme;
+    m.rev = Math.max(local.rev || 0, remote.rev || 0);
+    var ids = {};
+    Object.keys(local.q || {}).forEach(function (k) { ids[k] = 1; });
+    Object.keys(remote.q || {}).forEach(function (k) { ids[k] = 1; });
+    Object.keys(ids).forEach(function (k) {
+      var a = (local.q || {})[k], b = (remote.q || {})[k];
+      if (!a) m.q[k] = b;
+      else if (!b) m.q[k] = a;
+      else m.q[k] = (a.ts || 0) >= (b.ts || 0) ? a : b;
+    });
+    var seenJ = {};
+    (local.journal || []).concat(remote.journal || []).forEach(function (e) {
+      if (!seenJ[e.ts]) { seenJ[e.ts] = 1; m.journal.push(e); }
+    });
+    m.journal.sort(function (a, b) { return a.ts - b.ts; });
+    var tKeys = {};
+    Object.keys(local.topics || {}).concat(Object.keys(remote.topics || {})).forEach(function (k) { tKeys[k] = 1; });
+    Object.keys(tKeys).forEach(function (k) { m.topics[k] = !!((local.topics || {})[k] || (remote.topics || {})[k]); });
+    var aKeys = {};
+    Object.keys(local.activity || {}).concat(Object.keys(remote.activity || {})).forEach(function (k) { aKeys[k] = 1; });
+    Object.keys(aKeys).forEach(function (k) {
+      m.activity[k] = Math.max((local.activity || {})[k] || 0, (remote.activity || {})[k] || 0);
+    });
+    var seenM = {};
+    (local.mocks || []).concat(remote.mocks || []).forEach(function (e) {
+      if (!seenM[e.ts]) { seenM[e.ts] = 1; m.mocks.push(e); }
+    });
+    m.mocks.sort(function (a, b) { return a.ts - b.ts; });
+    return m;
+  }
+  var syncTimer = null, syncing = false;
+  function scheduleSync() {
+    if (!getSyncKey() || syncing) return;
+    clearTimeout(syncTimer);
+    syncTimer = setTimeout(syncNow, 3000);
+  }
+  function syncNow() {
+    var key = getSyncKey();
+    if (!key || syncing) { if (!key) setSyncStatus("off"); return; }
+    if (location.protocol === "file:") { setSyncStatus("error", "sync needs the website, not the local file"); return; }
+    syncing = true;
+    setSyncStatus("syncing");
+    var base = "/api/state?key=" + encodeURIComponent(key);
+    fetch(base)
+      .then(function (r) {
+        if (r.status === 404) return null;
+        if (!r.ok) throw new Error("server " + r.status);
+        return r.json();
+      })
+      .then(function (payload) {
+        if (payload && payload.state) {
+          S = mergeStates(S, payload.state);
+          S.rev = Date.now();
+          try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {}
+          render();
+        }
+        return fetch(base, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state: S }) });
+      })
+      .then(function (r) {
+        if (!r.ok) throw new Error("server " + r.status);
+        setSyncStatus("ok");
+      })
+      .catch(function (e) {
+        setSyncStatus(navigator.onLine === false ? "offline" : "error", String(e.message || e));
+      })
+      .finally(function () { syncing = false; });
+  }
+  window.addEventListener("online", function () { syncNow(); });
+
+  /* ---------- service worker ---------- */
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    navigator.serviceWorker.register("sw.js").catch(function () {});
+  }
+
   /* ---------- init ---------- */
   if (S.theme === "dark" || (S.theme === "auto" && window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
     document.documentElement.dataset.theme = "dark";
@@ -753,16 +1140,22 @@
   if (!WEEKS.length) {
     document.getElementById("viewroot").innerHTML = '<div class="empty"><span class="big">⚠</span>No question data found. Make sure the data/ folder with week1.js–week8.js sits next to index.html.</div>';
   } else {
-    var hashQ = (location.hash || "").replace(/^#q-/, "");
+    var hash = location.hash || "";
+    var hashQ = hash.indexOf("#q-") === 0 ? hash.slice(3) : "";
     if (hashQ && QBYID[hashQ]) {
       openRows[hashQ] = true;
       route.view = "week-" + QBYID[hashQ]._week;
+    } else if (hash.indexOf("#view-") === 0) {
+      var v = hash.slice(6);
+      if (["today", "journal", "guide", "stats", "mock"].indexOf(v) >= 0 || /^week-[1-8]$/.test(v)) route.view = v;
     }
     render();
     if (hashQ && QBYID[hashQ]) {
       var el = document.querySelector('.qrow[data-qid="' + hashQ + '"]');
       if (el) el.scrollIntoView({ block: "start" });
     }
+    setSyncStatus(getSyncKey() ? "syncing" : "off");
+    if (getSyncKey()) syncNow();
   }
 })();
 </script>
