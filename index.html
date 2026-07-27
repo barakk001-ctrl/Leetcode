@@ -233,7 +233,10 @@
   .qtimer {
     font-family: Consolas, monospace; font-size: 12.5px; color: var(--ink2);
     background: var(--surface2); border-radius: 6px; padding: 6px 10px; align-self: center;
+    border: 1px solid transparent; min-height: 32px;
   }
+  .qtimer:hover { border-color: var(--accent); color: var(--accent); }
+  .qtimer.running { color: var(--accent); border-color: var(--accent-soft); }
   .qtimer.warn { color: var(--orange); font-weight: 700; }
   .nudge { font-size: 12.5px; color: var(--orange); margin-top: 6px; font-weight: 600; display: none; }
   .nudge.on { display: block; }
@@ -663,7 +666,10 @@
       html += '<button class="abtn solved' + (st.status === "solved" ? " on" : "") + '" data-action="solved">Solved ✓</button>';
     }
     if (st.status !== "todo") html += '<button class="abtn reset" data-action="reset-q">reset</button>';
-    if (st.status !== "solved") html += '<span class="qtimer" data-qtimer="' + q.id + '">' + fmtDur(st.timeSec || 0) + "</span>";
+    if (st.status !== "solved") {
+      var running = !!timers[q.id];
+      html += '<button class="qtimer' + (running ? " running" : "") + '" data-action="timer-toggle" data-qtimer="' + q.id + '" title="start/pause the solve timer">' + (running ? "⏸ " : "▸ ") + fmtDur(st.timeSec || 0) + "</button>";
+    }
     html += "</div>";
     if (st.status !== "solved") html += '<div class="nudge" data-nudge="' + q.id + '"></div>';
     html += '<div class="qstate">' + stateLine(st) + "</div>";
@@ -852,8 +858,11 @@
 
     if (act === "toggle" && qid) {
       openRows[qid] = !openRows[qid];
-      if (openRows[qid]) { if (qs(qid).status !== "solved") startTimer(qid); }
-      else if (flushTimer(qid)) save();
+      if (!openRows[qid] && flushTimer(qid)) save();
+      render();
+    } else if (act === "timer-toggle" && qid) {
+      if (timers[qid]) { flushTimer(qid); save(); }
+      else startTimer(qid);
       render();
     } else if (act === "learn-toggle") {
       var lw = t.closest(".learnbox").dataset.learn;
@@ -1022,8 +1031,10 @@
     document.querySelectorAll("[data-qtimer]").forEach(function (el) {
       var qid = el.dataset.qtimer;
       var st = qs(qid);
-      var sec = (st.timeSec || 0) + (timers[qid] ? (now - timers[qid].start) / 1000 : 0);
-      el.textContent = "⏱ " + fmtDur(sec);
+      var running = !!timers[qid];
+      var sec = (st.timeSec || 0) + (running ? (now - timers[qid].start) / 1000 : 0);
+      el.textContent = (running ? "⏸ " : "▸ ") + fmtDur(sec);
+      el.classList.toggle("running", running);
       el.classList.toggle("warn", sec >= 15 * 60);
       var nudge = document.querySelector('[data-nudge="' + qid + '"]');
       if (nudge) {
