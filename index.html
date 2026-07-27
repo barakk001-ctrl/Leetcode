@@ -347,7 +347,7 @@
   <aside id="sidebar">
     <div class="brand">
       <div class="line1"><span class="kw">package</span> <span>grind</span><span class="typ">.kotlin</span></div>
-      <div class="sub">8-week interview plan · 58 questions</div>
+      <div class="sub">8-week plan + architecture · 70 questions</div>
     </div>
     <nav id="nav"></nav>
     <div class="sidefoot">
@@ -385,6 +385,8 @@
 <script src="data/learn6.js"></script>
 <script src="data/learn7.js"></script>
 <script src="data/learn8.js"></script>
+<script src="data/week9.js"></script>
+<script src="data/learn9.js"></script>
 <script>
 (function () {
   "use strict";
@@ -536,7 +538,7 @@
       segs += '<span class="seg' + (st.solved === st.total && st.total ? " full" : "") + '" style="flex:' + st.total + '" title="Week ' + w.week + ": " + st.solved + "/" + st.total + '"><i style="width:' + pct + '%"></i></span>';
     });
     segs += "</div>";
-    segs += '<div class="meterlabels"><span>wk01</span><span>wk08</span></div>';
+    segs += '<div class="meterlabels"><span>wk01</span><span>wk0' + WEEKS[WEEKS.length - 1].week + "</span></div>";
     return h + segs + "</div>";
   }
 
@@ -563,7 +565,7 @@
       html += '<div class="banner"><p><b>Weekly re-solve.</b> Repetition is where it sticks — pull 5 random solved questions back into today\'s review queue.</p><button data-action="shuffle5">Queue 5 for review</button></div>';
     }
     if (!due.length && !next.length) {
-      html += '<div class="empty"><span class="big">🎉</span>All 58 solved and nothing due. Go do mock interviews.</div>';
+      html += '<div class="empty"><span class="big">🎉</span>All ' + ALLQ.length + ' solved and nothing due. Go do mock interviews.</div>';
     }
     return html;
   }
@@ -628,23 +630,29 @@
   }
 
   function qbody(q, st, reviewMode) {
+    var arch = q._week === 9;
+    var L = arch
+      ? { h1: "Clarify", h2: "Components", ex: "Model answer", ko: "Code sketch", h1h: "clarify with the interviewer", h2h: "key components", exh: "model answer", koh: "sketch" }
+      : { h1: "Hint 1", h2: "Hint 2", ex: "Approach", ko: "Kotlin solution", h1h: "hint 1", h2h: "hint 2", exh: "approach", koh: "kotlin" };
     var html = '<div class="qsummary">' + esc(q.summary) + "</div>";
-    html += '<div class="qmeta"><a href="' + esc(q.url) + '" target="_blank" rel="noopener">Open on LeetCode ↗</a><span class="pat">pattern: ' + esc(q.pattern) + "</span></div>";
+    html += '<div class="qmeta">';
+    if (q.url) html += '<a href="' + esc(q.url) + '" target="_blank" rel="noopener">Open on LeetCode ↗</a>';
+    html += '<span class="pat">' + (arch ? "answer out loud, then compare" : "pattern: " + esc(q.pattern)) + "</span></div>";
 
     html += '<div class="reveals">';
-    html += '<button class="rbtn" data-action="reveal" data-panel="h1">Hint 1</button>';
-    html += '<button class="rbtn" data-action="reveal" data-panel="h2">Hint 2</button>';
-    html += '<button class="rbtn" data-action="reveal" data-panel="ex">Approach</button>';
-    html += '<button class="rbtn" data-action="reveal" data-panel="ko">Kotlin solution</button>';
+    html += '<button class="rbtn" data-action="reveal" data-panel="h1">' + L.h1 + "</button>";
+    html += '<button class="rbtn" data-action="reveal" data-panel="h2">' + L.h2 + "</button>";
+    html += '<button class="rbtn" data-action="reveal" data-panel="ex">' + L.ex + "</button>";
+    html += '<button class="rbtn" data-action="reveal" data-panel="ko">' + L.ko + "</button>";
     html += "</div>";
-    html += '<div class="rpanel" data-panel="h1"><h4>hint 1</h4><p>' + esc(q.hints[0] || "") + "</p></div>";
-    html += '<div class="rpanel" data-panel="h2"><h4>hint 2</h4><p>' + esc(q.hints[1] || "") + "</p></div>";
-    html += '<div class="rpanel" data-panel="ex"><h4>approach</h4>' + paras(q.explanation);
+    html += '<div class="rpanel" data-panel="h1"><h4>' + L.h1h + "</h4><p>" + esc(q.hints[0] || "") + "</p></div>";
+    html += '<div class="rpanel" data-panel="h2"><h4>' + L.h2h + "</h4><p>" + esc(q.hints[1] || "") + "</p></div>";
+    html += '<div class="rpanel" data-panel="ex"><h4>' + L.exh + "</h4>" + paras(q.explanation);
     if (q.pitfalls && q.pitfalls.length) {
       html += "<h4 style='margin-top:10px'>pitfalls</h4><ul>" + q.pitfalls.map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("") + "</ul>";
     }
     html += "</div>";
-    html += '<div class="rpanel" data-panel="ko"><h4>kotlin · ' + esc(q.complexity) + '</h4><pre class="code">' + highlightKotlin(q.kotlin) + "</pre></div>";
+    html += '<div class="rpanel" data-panel="ko"><h4>' + L.koh + " · " + esc(q.complexity) + '</h4><pre class="code">' + highlightKotlin(q.kotlin) + "</pre></div>";
 
     html += '<div class="actions">';
     if (isDue(st)) {
@@ -759,7 +767,7 @@
       html += '<div class="mocktimer" data-mocktimer>25:00</div>';
       html += '<div class="mockq"><div class="mtitle">' + esc(q.title) + ' <span class="diff ' + q.difficulty + '">' + q.difficulty + "</span></div>";
       html += '<div class="qsummary" style="margin-top:6px">' + esc(q.summary) + "</div>";
-      html += '<div class="qmeta" style="justify-content:center;margin-top:8px"><a href="' + esc(q.url) + '" target="_blank" rel="noopener">Open on LeetCode ↗</a></div></div>';
+      html += '<div class="qmeta" style="justify-content:center;margin-top:8px">' + (q.url ? '<a href="' + esc(q.url) + '" target="_blank" rel="noopener">Open on LeetCode ↗</a>' : '<span class="pat">design question — answer out loud, sketch on paper</span>') + "</div></div>";
       html += '<div class="mockbtns"><button class="primarybtn" data-action="mock-solved">I solved it ✓</button>';
       html += '<button class="ghostbtn" style="flex:0 0 auto;padding:10px 20px" data-action="mock-giveup">Give up — show me the approach</button></div>';
       html += "</div>";
@@ -1147,7 +1155,7 @@
       route.view = "week-" + QBYID[hashQ]._week;
     } else if (hash.indexOf("#view-") === 0) {
       var v = hash.slice(6);
-      if (["today", "journal", "guide", "stats", "mock"].indexOf(v) >= 0 || /^week-[1-8]$/.test(v)) route.view = v;
+      if (["today", "journal", "guide", "stats", "mock"].indexOf(v) >= 0 || /^week-[1-9]$/.test(v)) route.view = v;
     }
     render();
     if (hashQ && QBYID[hashQ]) {
