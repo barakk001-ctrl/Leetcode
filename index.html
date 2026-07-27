@@ -293,6 +293,15 @@
   .learnsec h4 .snum { color: var(--accent); font-family: Consolas, monospace; margin-right: 6px; }
   .learnsec p { font-size: 13.5px; color: var(--ink2); margin-bottom: 8px; }
   .learnsec pre.code { margin-top: 4px; }
+  .linklist { list-style: none; padding: 0; margin-top: 8px; }
+  .linklist li { padding: 4px 0; display: flex; align-items: baseline; gap: 8px; font-size: 13.5px; }
+  .lkind {
+    font-family: Consolas, monospace; font-size: 10px; text-transform: uppercase; letter-spacing: .05em;
+    padding: 1px 7px; border-radius: 9px; flex-shrink: 0;
+  }
+  .lkind.video { background: var(--orange-soft); color: var(--orange); }
+  .lkind.article { background: var(--blue-soft); color: var(--blue); }
+  .lkind.docs, .lkind.reference { background: var(--accent-soft); color: var(--accent); }
 
   .banner {
     background: var(--accent-soft); border-radius: 10px; padding: 14px 18px;
@@ -390,6 +399,7 @@
 <script src="data/learn8.js"></script>
 <script src="data/week9.js"></script>
 <script src="data/learn9.js"></script>
+<script src="data/links.js"></script>
 <script>
 (function () {
   "use strict";
@@ -600,6 +610,14 @@
       if (s.kotlin) html += '<pre class="code">' + highlightKotlin(s.kotlin) + "</pre>";
       html += "</div>";
     });
+    var links = (window.LC_LINKS || {})[weekNum];
+    if (links && links.length) {
+      html += '<div class="learnsec"><h4><span class="snum">↗</span>Go deeper — watch &amp; read</h4><ul class="linklist">';
+      links.forEach(function (l) {
+        html += '<li><span class="lkind ' + esc(l.k) + '">' + esc(l.k) + '</span><a href="' + esc(l.u) + '" target="_blank" rel="noopener">' + esc(l.t) + "</a></li>";
+      });
+      html += "</ul></div>";
+    }
     html += "</div></div>";
     return html;
   }

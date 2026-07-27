@@ -1,4 +1,4 @@
-const CACHE = "kotlin-grind-v2";
+const CACHE = "kotlin-grind-v3";
 const SHELL = [
   "./",
   "index.html",
@@ -9,6 +9,7 @@ const SHELL = [
   "data/week5.js", "data/week6.js", "data/week7.js", "data/week8.js", "data/week9.js",
   "data/learn1.js", "data/learn2.js", "data/learn3.js", "data/learn4.js",
   "data/learn5.js", "data/learn6.js", "data/learn7.js", "data/learn8.js", "data/learn9.js",
+  "data/links.js",
 ];
 
 self.addEventListener("install", (e) => {
