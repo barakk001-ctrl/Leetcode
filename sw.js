@@ -1,4 +1,4 @@
-const CACHE = "kotlin-grind-v3";
+const CACHE = "kotlin-grind-v4";
 const SHELL = [
   "./",
   "index.html",
@@ -10,6 +10,10 @@ const SHELL = [
   "data/learn1.js", "data/learn2.js", "data/learn3.js", "data/learn4.js",
   "data/learn5.js", "data/learn6.js", "data/learn7.js", "data/learn8.js", "data/learn9.js",
   "data/links.js",
+  "vendor/codemirror/codemirror.min.css", "vendor/codemirror/codemirror.min.js",
+  "vendor/codemirror/clike.min.js", "vendor/codemirror/show-hint.min.js",
+  "vendor/codemirror/show-hint.min.css", "vendor/codemirror/matchbrackets.min.js",
+  "vendor/codemirror/closebrackets.min.js",
 ];
 
 self.addEventListener("install", (e) => {

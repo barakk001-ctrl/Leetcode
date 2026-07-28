@@ -8,6 +8,8 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <title>Kotlin Grind — 8-Week LeetCode Plan</title>
+<link rel="stylesheet" href="vendor/codemirror/codemirror.min.css">
+<link rel="stylesheet" href="vendor/codemirror/show-hint.min.css">
 <style>
   :root {
     --bg: #f7f8fa;
@@ -229,6 +231,38 @@
   .savehint { font-size: 11px; color: var(--muted); margin-top: 2px; visibility: hidden; }
   .savehint.on { visibility: visible; color: var(--green); }
 
+  /* code editor */
+  .codeslot { margin-top: 4px; }
+  .CodeMirror {
+    background: var(--code-bg); color: var(--ink);
+    border: 1px solid var(--border); border-radius: 8px;
+    font-family: "Cascadia Code", Consolas, "JetBrains Mono", monospace;
+    font-size: 13px; line-height: 1.6; height: auto; min-height: 140px;
+  }
+  .CodeMirror-scroll { min-height: 140px; max-height: 440px; }
+  .CodeMirror-focused { border-color: var(--accent); }
+  .CodeMirror-gutters { background: var(--code-bg); border-right: 1px solid var(--border); }
+  .CodeMirror-linenumber { color: var(--muted); }
+  .CodeMirror-cursor { border-left: 2px solid var(--ink); }
+  .CodeMirror-selected { background: var(--accent-soft) !important; }
+  .cm-s-default .cm-keyword { color: var(--kw); font-weight: 600; }
+  .cm-s-default .cm-string, .cm-s-default .cm-string-2 { color: var(--str); }
+  .cm-s-default .cm-number { color: var(--num); }
+  .cm-s-default .cm-comment { color: var(--cmt); font-style: italic; }
+  .cm-s-default .cm-type, .cm-s-default .cm-variable-3 { color: var(--typ); }
+  .cm-s-default .cm-def { color: var(--fn); }
+  .cm-s-default .cm-variable, .cm-s-default .cm-variable-2, .cm-s-default .cm-property, .cm-s-default .cm-operator, .cm-s-default .cm-punctuation { color: var(--ink); }
+  .cm-s-default .cm-atom, .cm-s-default .cm-meta { color: var(--typ); }
+  .CodeMirror-hints {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 4px 14px rgba(0,0,0,.18); font-family: Consolas, monospace; font-size: 12.5px; z-index: 50;
+  }
+  .CodeMirror-hint { color: var(--ink); padding: 3px 10px; border-radius: 4px; }
+  li.CodeMirror-hint-active { background: var(--accent); color: #fff; }
+  .CodeMirror-matchingbracket { color: var(--accent) !important; font-weight: 700; text-decoration: underline; }
+  .codebar { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+  .codebar .hintnote { font-size: 11px; color: var(--muted); font-family: Consolas, monospace; }
+
   /* timer */
   .qtimer {
     font-family: Consolas, monospace; font-size: 12.5px; color: var(--ink2);
@@ -400,6 +434,11 @@
 <script src="data/week9.js"></script>
 <script src="data/learn9.js"></script>
 <script src="data/links.js"></script>
+<script src="vendor/codemirror/codemirror.min.js"></script>
+<script src="vendor/codemirror/clike.min.js"></script>
+<script src="vendor/codemirror/show-hint.min.js"></script>
+<script src="vendor/codemirror/matchbrackets.min.js"></script>
+<script src="vendor/codemirror/closebrackets.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -523,6 +562,7 @@
 
   /* ---------- views ---------- */
   function render() {
+    flushEditors();
     renderNav();
     var root = document.getElementById("viewroot");
     if (route.view === "today") root.innerHTML = viewToday();
@@ -535,6 +575,7 @@
       var w = WEEKS.filter(function (x) { return x.week === n; })[0];
       root.innerHTML = w ? viewWeek(w) : viewToday();
     }
+    initEditors();
     document.getElementById("main").scrollTop = 0;
   }
 
@@ -692,6 +733,10 @@
     if (st.status !== "solved") html += '<div class="nudge" data-nudge="' + q.id + '"></div>';
     html += '<div class="qstate">' + stateLine(st) + "</div>";
 
+    html += '<div class="notes" style="margin-top:14px"><label>your solution — write it here, then submit on LeetCode</label>';
+    html += '<div class="codeslot" data-code="' + q.id + '"></div>';
+    html += '<div class="codebar"><button class="ghostbtn" style="flex:0 0 auto" data-action="copy-code">Copy code</button><span class="hintnote">Ctrl-Space (or just type 2+ letters) for completion</span></div></div>';
+
     html += '<div class="notes"><label for="n-' + q.id + '">notes / what tripped me up</label>';
     html += '<textarea id="n-' + q.id + '" dir="auto" data-action="notes" placeholder="e.g. forgot to shrink the window before updating the max…">' + esc(st.notes || "") + "</textarea>";
     html += '<div class="savehint">saved ✓</div></div>';
@@ -792,6 +837,8 @@
       html += '<div class="mockq"><div class="mtitle">' + esc(q.title) + ' <span class="diff ' + q.difficulty + '">' + q.difficulty + "</span></div>";
       html += '<div class="qsummary" style="margin-top:6px">' + esc(q.summary) + "</div>";
       html += '<div class="qmeta" style="justify-content:center;margin-top:8px">' + (q.url ? '<a href="' + esc(q.url) + '" target="_blank" rel="noopener">Open on LeetCode ↗</a>' : '<span class="pat">design question — answer out loud, sketch on paper</span>') + "</div></div>";
+      html += '<div class="notes" style="margin:0 0 16px;text-align:left"><label>your solution</label><div class="codeslot" data-code="' + q.id + '"></div>';
+      html += '<div class="codebar"><button class="ghostbtn" style="flex:0 0 auto" data-action="copy-code">Copy code</button><span class="hintnote">Ctrl-Space for completion</span></div></div>';
       html += '<div class="mockbtns"><button class="primarybtn" data-action="mock-solved">I solved it ✓</button>';
       html += '<button class="ghostbtn" style="flex:0 0 auto;padding:10px 20px" data-action="mock-giveup">Give up — show me the approach</button></div>';
       html += "</div>";
@@ -953,6 +1000,20 @@
       render();
       var el = document.querySelector('.qrow[data-qid="' + gq + '"]');
       if (el) el.scrollIntoView({ block: "start" });
+    } else if (act === "copy-code") {
+      var slot = t.closest(".notes").querySelector("[data-code]");
+      var cmEd = slot && editors[slot.dataset.code];
+      if (cmEd) {
+        var codeText = cmEd.getValue();
+        var done = function () { t.textContent = "Copied ✓"; setTimeout(function () { t.textContent = "Copy code"; }, 1200); };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(codeText).then(done).catch(done);
+        else {
+          var ta = document.createElement("textarea");
+          ta.value = codeText; document.body.appendChild(ta); ta.select();
+          try { document.execCommand("copy"); } catch (e) {}
+          document.body.removeChild(ta); done();
+        }
+      }
     } else if (act === "sync-now") {
       syncNow();
     } else if (act === "sync-key") {
@@ -1027,6 +1088,96 @@
     ev.target.value = "";
   });
 
+  /* ---------- code editor ---------- */
+  var editors = {};
+  var KOTLIN_DICT = [
+    "println", "print", "System.out.println", "readLine", "main",
+    "fun", "val", "var", "return", "if", "else", "when", "while", "for", "in", "until", "downTo", "step", "break", "continue",
+    "class", "object", "interface", "data class", "override", "private", "public", "lateinit", "companion object", "constructor", "init",
+    "listOf", "mutableListOf", "arrayListOf", "setOf", "mutableSetOf", "hashSetOf", "mapOf", "mutableMapOf", "hashMapOf",
+    "HashMap", "HashSet", "LinkedHashMap", "ArrayDeque", "PriorityQueue", "StringBuilder", "Comparator",
+    "IntArray", "CharArray", "BooleanArray", "LongArray", "Array", "Pair", "Triple",
+    "intArrayOf", "arrayOf", "charArrayOf", "emptyList",
+    "Int", "Int.MAX_VALUE", "Int.MIN_VALUE", "Long", "Double", "Boolean", "Char", "String", "Unit",
+    "forEach", "forEachIndexed", "map", "mapIndexed", "filter", "filterNot", "flatMap",
+    "sorted", "sortedBy", "sortedByDescending", "sortedWith", "sort", "sortBy", "sortDescending", "sortWith", "reversed", "reverse",
+    "groupBy", "associateBy", "associateWith", "maxOrNull", "minOrNull", "maxOf", "minOf", "maxByOrNull", "minByOrNull",
+    "sum", "sumOf", "count", "first", "firstOrNull", "last", "lastOrNull", "any", "all", "none",
+    "isEmpty", "isNotEmpty", "isNullOrEmpty", "size", "length", "indices", "lastIndex", "withIndex",
+    "add", "addFirst", "addLast", "remove", "removeFirst", "removeLast", "removeAt", "poll", "offer", "peek", "push", "pop", "clear",
+    "getOrDefault", "getOrPut", "getOrElse", "getOrNull", "containsKey", "containsValue", "contains", "indexOf", "keys", "values", "entries",
+    "substring", "toCharArray", "toIntArray", "toList", "toSet", "toMutableList", "toString", "toInt", "toLong",
+    "joinToString", "split", "trim", "lowercase", "uppercase", "repeat", "reversed", "compareTo", "equals", "hashCode",
+    "coerceAtLeast", "coerceAtMost", "coerceIn", "Math.max", "Math.min", "Math.abs", "kotlin.math.abs", "kotlin.math.max", "kotlin.math.min",
+    "compareBy", "compareByDescending", "thenBy", "require", "check", "error", "TODO",
+    "let", "also", "apply", "run", "takeIf", "takeUnless", "buildList", "buildString", "generateSequence"
+  ];
+  function kotlinHint(cm) {
+    var cur = cm.getCursor();
+    var line = cm.getLine(cur.line).slice(0, cur.ch);
+    var m = line.match(/[A-Za-z_][\w.]*$/);
+    if (!m) return null;
+    var word = m[0];
+    var start = cur.ch - word.length;
+    var lower = word.toLowerCase();
+    var list = KOTLIN_DICT.filter(function (w) { return w.toLowerCase().indexOf(lower) === 0 && w !== word; });
+    var bufWords = (cm.getValue().match(/[A-Za-z_]\w{2,}/g) || []);
+    var seen = {};
+    list.forEach(function (w) { seen[w] = 1; });
+    bufWords.forEach(function (w) {
+      if (!seen[w] && w !== word && w.toLowerCase().indexOf(lower) === 0) { seen[w] = 1; list.push(w); }
+    });
+    if (!list.length) return null;
+    return { list: list.slice(0, 12), from: CodeMirror.Pos(cur.line, start), to: CodeMirror.Pos(cur.line, cur.ch) };
+  }
+  var editorFlushTimer = null;
+  function flushEditors() {
+    var dirty = false;
+    Object.keys(editors).forEach(function (qid) {
+      var cm = editors[qid];
+      if (!cm) return;
+      var v = cm.getValue();
+      var st = qs(qid);
+      if ((st.code || "") !== v) { st.code = v; touch(st); dirty = true; }
+    });
+    if (dirty) save();
+  }
+  function initEditors() {
+    editors = {};
+    if (typeof CodeMirror === "undefined") return;
+    document.querySelectorAll("[data-code]").forEach(function (el) {
+      var qid = el.dataset.code;
+      el.innerHTML = "";
+      var cm = CodeMirror(el, {
+        value: qs(qid).code || "",
+        mode: "text/x-kotlin",
+        lineNumbers: true,
+        indentUnit: 4,
+        tabSize: 4,
+        matchBrackets: true,
+        autoCloseBrackets: true,
+        viewportMargin: Infinity,
+        extraKeys: {
+          "Ctrl-Space": function (cm) { cm.showHint({ hint: kotlinHint, completeSingle: false }); },
+        },
+      });
+      cm.on("inputRead", function (cm, change) {
+        var typed = change.text[change.text.length - 1];
+        if (typed && /[\w.]$/.test(typed)) {
+          var line = cm.getLine(cm.getCursor().line).slice(0, cm.getCursor().ch);
+          var m = line.match(/[A-Za-z_][\w.]*$/);
+          if (m && m[0].length >= 2) cm.showHint({ hint: kotlinHint, completeSingle: false });
+        }
+      });
+      cm.on("change", function () {
+        clearTimeout(editorFlushTimer);
+        editorFlushTimer = setTimeout(flushEditors, 800);
+      });
+      cm.on("blur", flushEditors);
+      editors[qid] = cm;
+    });
+  }
+
   /* ---------- solve timer ---------- */
   var timers = {}; // qid -> {start}
   function startTimer(qid) { if (!timers[qid]) timers[qid] = { start: Date.now() }; }
@@ -1072,9 +1223,9 @@
       mt.classList.toggle("out", left === 0);
     }
   }, 1000);
-  window.addEventListener("beforeunload", flushAllTimers);
+  window.addEventListener("beforeunload", function () { flushAllTimers(); flushEditors(); });
   document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "hidden") flushAllTimers();
+    if (document.visibilityState === "hidden") { flushAllTimers(); flushEditors(); }
   });
 
   /* ---------- sync ---------- */
@@ -1147,10 +1298,15 @@
       })
       .then(function (payload) {
         if (payload && payload.state) {
-          S = mergeStates(S, payload.state);
-          S.rev = Date.now();
-          try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {}
-          render();
+          var merged = mergeStates(S, payload.state);
+          // only re-render when remote actually changed something — avoids
+          // rebuilding the editor (and losing the cursor) mid-typing
+          if (JSON.stringify(merged) !== JSON.stringify(mergeStates(S, S))) {
+            S = merged;
+            S.rev = Date.now();
+            try { localStorage.setItem(STORE_KEY, JSON.stringify(S)); } catch (e) {}
+            render();
+          }
         }
         return fetch(base, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ state: S }) });
       })
