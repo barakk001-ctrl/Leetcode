@@ -434,6 +434,7 @@
 <script src="data/week9.js"></script>
 <script src="data/learn9.js"></script>
 <script src="data/links.js"></script>
+<script src="data/starters.js"></script>
 <script src="vendor/codemirror/codemirror.min.js"></script>
 <script src="vendor/codemirror/clike.min.js"></script>
 <script src="vendor/codemirror/show-hint.min.js"></script>
@@ -735,7 +736,9 @@
 
     html += '<div class="notes" style="margin-top:14px"><label>your solution — write it here, then submit on LeetCode</label>';
     html += '<div class="codeslot" data-code="' + q.id + '"></div>';
-    html += '<div class="codebar"><button class="ghostbtn" style="flex:0 0 auto" data-action="copy-code">Copy code</button><span class="hintnote">Ctrl-Space (or just type 2+ letters) for completion</span></div></div>';
+    html += '<div class="codebar"><button class="ghostbtn" style="flex:0 0 auto" data-action="copy-code">Copy code</button>';
+    if ((window.LC_STARTERS || {})[q.id]) html += '<button class="ghostbtn" style="flex:0 0 auto" data-action="reset-code" title="replace your code with the LeetCode starter">↺ Starter</button>';
+    html += '<span class="hintnote">Ctrl-Space (or just type 2+ letters) for completion</span></div></div>';
 
     html += '<div class="notes"><label for="n-' + q.id + '">notes / what tripped me up</label>';
     html += '<textarea id="n-' + q.id + '" dir="auto" data-action="notes" placeholder="e.g. forgot to shrink the window before updating the max…">' + esc(st.notes || "") + "</textarea>";
@@ -1014,6 +1017,14 @@
           document.body.removeChild(ta); done();
         }
       }
+    } else if (act === "reset-code") {
+      var rslot = t.closest(".notes").querySelector("[data-code]");
+      var rcm = rslot && editors[rslot.dataset.code];
+      var starter = (window.LC_STARTERS || {})[rslot ? rslot.dataset.code : ""];
+      if (rcm && starter && confirm("Replace your code with the LeetCode starter template?")) {
+        rcm.setValue(starter);
+        flushEditors();
+      }
     } else if (act === "sync-now") {
       syncNow();
     } else if (act === "sync-key") {
@@ -1149,7 +1160,7 @@
       var qid = el.dataset.code;
       el.innerHTML = "";
       var cm = CodeMirror(el, {
-        value: qs(qid).code || "",
+        value: qs(qid).code || (window.LC_STARTERS || {})[qid] || "",
         mode: "text/x-kotlin",
         lineNumbers: true,
         indentUnit: 4,
